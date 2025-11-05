@@ -9,6 +9,9 @@ env:
   CARGO_TERM_COLOR: always
   CARGO_INCREMENTAL: 1
 
+permissions:
+  contents: write  # Required to create releases and upload assets
+
 jobs:
   build-windows:
     name: Build Windows Release
