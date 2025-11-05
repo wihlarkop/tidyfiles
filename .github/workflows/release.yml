@@ -1,0 +1,126 @@
+name: Release Windows Installer
+
+on:
+  push:
+    tags:
+      - 'v*.*.*'  # Triggers on version tags like v0.1.0, v1.2.3, etc.
+
+env:
+  CARGO_TERM_COLOR: always
+
+jobs:
+  build-windows:
+    name: Build Windows Release
+    runs-on: windows-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      - name: Install pnpm
+        uses: pnpm/action-setup@v4
+        with:
+          version: 10
+
+      - name: Setup Rust
+        uses: dtolnay/rust-toolchain@stable
+        with:
+          toolchain: stable
+
+      - name: Rust cache
+        uses: swatinem/rust-cache@v2
+        with:
+          workspaces: './src-tauri -> target'
+
+      - name: Install frontend dependencies
+        run: pnpm install
+
+      # Uncomment when you have a code signing certificate
+      # - name: Setup code signing
+      #   run: |
+      #     echo "${{ secrets.WINDOWS_CERTIFICATE }}" | base64 --decode > cert.pfx
+      #     # Add certificate to Windows certificate store
+
+      - name: Build Tauri app (release)
+        run: pnpm tauri build
+        env:
+          # Uncomment when you have a code signing certificate
+          # TAURI_SIGNING_PRIVATE_KEY: ${{ secrets.TAURI_PRIVATE_KEY }}
+          # TAURI_SIGNING_PRIVATE_KEY_PASSWORD: ${{ secrets.TAURI_KEY_PASSWORD }}
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Get version from tag
+        id: get_version
+        shell: bash
+        run: echo "VERSION=${GITHUB_REF#refs/tags/v}" >> $GITHUB_OUTPUT
+
+      - name: Create Release
+        id: create_release
+        uses: actions/create-release@v1
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          tag_name: ${{ github.ref }}
+          release_name: TidyFiles v${{ steps.get_version.outputs.VERSION }}
+          body: |
+            ## TidyFiles v${{ steps.get_version.outputs.VERSION }}
+
+            ### Windows Installers
+            - **MSI Installer** (recommended for enterprise)
+            - **NSIS Setup** (recommended for individual users)
+
+            ### Installation
+            1. Download either the `.msi` or `-setup.exe` file below
+            2. Run the installer
+            3. Follow the installation wizard
+
+            ### System Requirements
+            - Windows 10 or later
+            - WebView2 runtime (automatically installed if not present)
+
+            ### What's New
+            - Initial release
+            - File organization with custom rules
+            - Duplicate file finder
+            - Operation history and rollback
+            - Dark/Light theme support
+
+            ---
+
+            **Note**: Windows may show a SmartScreen warning on first run. This is normal for new applications without Extended Validation certificates. Click "More info" → "Run anyway" to proceed.
+          draft: false
+          prerelease: false
+
+      - name: Upload MSI Installer
+        uses: actions/upload-release-asset@v1
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          upload_url: ${{ steps.create_release.outputs.upload_url }}
+          asset_path: ./src-tauri/target/release/bundle/msi/TidyFiles_${{ steps.get_version.outputs.VERSION }}_x64_en-US.msi
+          asset_name: TidyFiles_${{ steps.get_version.outputs.VERSION }}_x64_en-US.msi
+          asset_content_type: application/x-msi
+
+      - name: Upload NSIS Setup
+        uses: actions/upload-release-asset@v1
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          upload_url: ${{ steps.create_release.outputs.upload_url }}
+          asset_path: ./src-tauri/target/release/bundle/nsis/TidyFiles_${{ steps.get_version.outputs.VERSION }}_x64-setup.exe
+          asset_name: TidyFiles_${{ steps.get_version.outputs.VERSION }}_x64-setup.exe
+          asset_content_type: application/x-msdownload
+
+      - name: Upload artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: tidyfiles-windows-release-v${{ steps.get_version.outputs.VERSION }}
+          path: |
+            src-tauri/target/release/bundle/msi/*.msi
+            src-tauri/target/release/bundle/nsis/*-setup.exe
+          retention-days: 90

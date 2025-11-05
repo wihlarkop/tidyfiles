@@ -1,0 +1,69 @@
+name: Test & Build Check
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+env:
+  CARGO_TERM_COLOR: always
+
+jobs:
+  test-windows:
+    name: Test on Windows
+    runs-on: windows-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      - name: Install pnpm
+        uses: pnpm/action-setup@v4
+        with:
+          version: 10
+
+      - name: Setup Rust
+        uses: dtolnay/rust-toolchain@stable
+        with:
+          toolchain: stable
+
+      - name: Rust cache
+        uses: swatinem/rust-cache@v2
+        with:
+          workspaces: './src-tauri -> target'
+
+      - name: Install frontend dependencies
+        run: pnpm install
+
+      - name: Run Rust checks
+        run: |
+          cd src-tauri
+          cargo check --all-features
+          cargo clippy -- -D warnings
+          cargo fmt --all -- --check
+
+      - name: Run Rust tests
+        run: |
+          cd src-tauri
+          cargo test
+
+      - name: Build frontend
+        run: pnpm build
+
+      - name: Build Tauri app (debug)
+        run: pnpm tauri build --debug
+
+      - name: Upload build artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: tidyfiles-windows-debug
+          path: |
+            src-tauri/target/debug/bundle/msi/*.msi
+            src-tauri/target/debug/bundle/nsis/*-setup.exe
+          retention-days: 7
