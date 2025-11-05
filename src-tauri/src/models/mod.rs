@@ -15,6 +15,4 @@ pub use rule::{
     RuleCondition, RuleMatch,
 };
 pub use scan::{OrganizeOptions, ScanOptions, ScanResult};
-pub use settings::{
-    AppSettings, DuplicateDefaults, GeneralSettings, OrganizeDefaults, ScanDefaults, UiPreferences,
-};
+pub use settings::AppSettings;

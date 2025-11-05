@@ -68,7 +68,7 @@ pub async fn scan_for_duplicates(
 
                 size_map
                     .entry(size)
-                    .or_insert_with(Vec::new)
+                    .or_default()
                     .push(entry.path().to_path_buf());
             }
         }
@@ -111,10 +111,7 @@ pub async fn scan_for_duplicates(
                 }
 
                 if let Ok(hash) = calculate_smart_hash(path, use_partial_hash, partial_threshold) {
-                    hash_map
-                        .entry(hash)
-                        .or_insert_with(Vec::new)
-                        .push(path.clone());
+                    hash_map.entry(hash).or_default().push(path.clone());
                 }
             }
         }

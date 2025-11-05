@@ -1,23 +1,14 @@
 use super::file_info::FileInfo;
 use serde::{Deserialize, Serialize};
 
-#[derive(Debug, Clone, Serialize, Deserialize)]
+#[derive(Debug, Clone, Serialize, Deserialize, Default)]
 pub struct ScanOptions {
     pub extensions: Option<Vec<String>>,
     pub max_depth: Option<usize>,
+    #[serde(default)]
     pub include_hidden: bool,
+    #[serde(default)]
     pub follow_symlinks: bool,
-}
-
-impl Default for ScanOptions {
-    fn default() -> Self {
-        Self {
-            extensions: None,
-            max_depth: None,
-            include_hidden: false,
-            follow_symlinks: false,
-        }
-    }
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -30,17 +21,18 @@ pub struct ScanResult {
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct OrganizeOptions {
+    #[serde(default = "default_operation_mode")]
     pub operation_mode: String, // "move" or "copy"
+    #[serde(default = "default_true")]
     pub create_backup: bool,
+    #[serde(default)]
     pub dry_run: bool,
 }
 
-impl Default for OrganizeOptions {
-    fn default() -> Self {
-        Self {
-            operation_mode: "move".to_string(),
-            create_backup: true,
-            dry_run: false,
-        }
-    }
+fn default_operation_mode() -> String {
+    "move".to_string()
+}
+
+fn default_true() -> bool {
+    true
 }

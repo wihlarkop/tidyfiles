@@ -84,6 +84,7 @@ pub struct RuleMatch {
     pub rule_name: String,
 }
 
+#[allow(dead_code)]
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct RuleTemplate {
     pub id: String,

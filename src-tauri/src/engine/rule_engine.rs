@@ -149,7 +149,10 @@ impl RuleEngine {
             destination = destination.replace("{modified_year}", &dt.year().to_string());
             destination = destination.replace("{modified_month}", &format!("{:02}", dt.month()));
             destination = destination.replace("{modified_day}", &format!("{:02}", dt.day()));
-            destination = destination.replace("{modified_date}", &format!("{}-{:02}-{:02}", dt.year(), dt.month(), dt.day()));
+            destination = destination.replace(
+                "{modified_date}",
+                &format!("{}-{:02}-{:02}", dt.year(), dt.month(), dt.day()),
+            );
         }
 
         // Created date placeholders
@@ -161,7 +164,10 @@ impl RuleEngine {
             destination = destination.replace("{created_year}", &dt.year().to_string());
             destination = destination.replace("{created_month}", &format!("{:02}", dt.month()));
             destination = destination.replace("{created_day}", &format!("{:02}", dt.day()));
-            destination = destination.replace("{created_date}", &format!("{}-{:02}-{:02}", dt.year(), dt.month(), dt.day()));
+            destination = destination.replace(
+                "{created_date}",
+                &format!("{}-{:02}-{:02}", dt.year(), dt.month(), dt.day()),
+            );
         }
 
         let dest_path = PathBuf::from(destination);
@@ -195,7 +201,10 @@ impl RuleEngine {
                     new_name = new_name.replace("{modified_year}", &dt.year().to_string());
                     new_name = new_name.replace("{modified_month}", &format!("{:02}", dt.month()));
                     new_name = new_name.replace("{modified_day}", &format!("{:02}", dt.day()));
-                    new_name = new_name.replace("{modified_date}", &format!("{}-{:02}-{:02}", dt.year(), dt.month(), dt.day()));
+                    new_name = new_name.replace(
+                        "{modified_date}",
+                        &format!("{}-{:02}-{:02}", dt.year(), dt.month(), dt.day()),
+                    );
                 }
             }
 
@@ -205,7 +214,10 @@ impl RuleEngine {
                     new_name = new_name.replace("{created_year}", &dt.year().to_string());
                     new_name = new_name.replace("{created_month}", &format!("{:02}", dt.month()));
                     new_name = new_name.replace("{created_day}", &format!("{:02}", dt.day()));
-                    new_name = new_name.replace("{created_date}", &format!("{}-{:02}-{:02}", dt.year(), dt.month(), dt.day()));
+                    new_name = new_name.replace(
+                        "{created_date}",
+                        &format!("{}-{:02}-{:02}", dt.year(), dt.month(), dt.day()),
+                    );
                 }
             }
 

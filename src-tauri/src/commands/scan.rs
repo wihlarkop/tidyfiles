@@ -1,6 +1,6 @@
 use crate::models::{FileInfo, ScanOptions, ScanResult};
 use serde::Serialize;
-use std::path::PathBuf;
+use std::path::{Path, PathBuf};
 use std::time::Instant;
 use tauri::{AppHandle, Emitter};
 use walkdir::WalkDir;
@@ -112,7 +112,7 @@ pub async fn validate_paths(
     if source_path.exists() {
         validation.source_valid = true;
         // Try to read the directory to check permissions
-        if let Ok(_) = std::fs::read_dir(&source_path) {
+        if std::fs::read_dir(&source_path).is_ok() {
             validation.source_readable = true;
         }
     }
@@ -132,7 +132,7 @@ pub async fn validate_paths(
     Ok(validation)
 }
 
-fn check_writable(path: &PathBuf) -> bool {
+fn check_writable(path: &Path) -> bool {
     if path.exists() {
         // Try to create a temp file to test write permission
         let test_file = path.join(".tidyfiles_write_test");
@@ -145,7 +145,7 @@ fn check_writable(path: &PathBuf) -> bool {
         // Check if a parent is writable
         if let Some(parent) = path.parent() {
             if parent.exists() {
-                return check_writable(&parent.to_path_buf());
+                return check_writable(parent);
             }
         }
         false

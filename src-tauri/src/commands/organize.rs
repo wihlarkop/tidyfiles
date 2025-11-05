@@ -66,6 +66,9 @@ pub async fn organize_files(
         None
     };
 
+    // Compile regex once outside the loop
+    let counter_regex = regex::Regex::new(r"\{counter:(\d+)d}").unwrap();
+
     for (index, rule_match) in matches.iter().enumerate() {
         // Emit progress every 10 files
         if index % 10 == 0 {
@@ -90,7 +93,6 @@ pub async fn organize_files(
                 *counter += 1;
 
                 // Replace counter-patterns like {counter:03d} or {counter:05d}
-                let counter_regex = regex::Regex::new(r"\{counter:(\d+)d}").unwrap();
                 let dest_str_updated =
                     counter_regex.replace_all(dest_str, |caps: &regex::Captures| {
                         let width: usize = caps[1].parse().unwrap_or(3);
