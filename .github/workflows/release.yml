@@ -7,6 +7,7 @@ on:
 
 env:
   CARGO_TERM_COLOR: always
+  CARGO_INCREMENTAL: 1
 
 jobs:
   build-windows:
@@ -25,18 +26,32 @@ jobs:
       - name: Install pnpm
         uses: pnpm/action-setup@v4
 
+      - name: Get pnpm store directory
+        shell: bash
+        run: |
+          echo "STORE_PATH=$(pnpm store path --silent)" >> $GITHUB_ENV
+
+      - name: Setup pnpm cache
+        uses: actions/cache@v4
+        with:
+          path: ${{ env.STORE_PATH }}
+          key: ${{ runner.os }}-pnpm-store-${{ hashFiles('**/pnpm-lock.yaml') }}
+          restore-keys: |
+            ${{ runner.os }}-pnpm-store-
+
       - name: Setup Rust
         uses: dtolnay/rust-toolchain@stable
         with:
           toolchain: stable
 
       - name: Rust cache
-        uses: swatinem/rust-cache@v2
+        uses: Swatinem/rust-cache@v2
         with:
           workspaces: './src-tauri -> target'
+          cache-on-failure: true
 
       - name: Install frontend dependencies
-        run: pnpm install
+        run: pnpm install --frozen-lockfile
 
       # Uncomment when you have a code signing certificate
       # - name: Setup code signing
@@ -81,16 +96,29 @@ jobs:
             - Windows 10 or later
             - WebView2 runtime (automatically installed if not present)
 
+            ### Features
+            - 📁 File organization with custom rules and conditions
+            - ☑️ Batch file selection for selective organization
+            - 🧪 Dry run mode for testing rules
+            - 🏷️ Custom placeholders for file patterns (dates, size, metadata)
+            - 🔍 Duplicate file finder with hash-based detection
+            - 📜 Operation history with rollback support
+            - 🔎 Search and filter across all views
+            - ⚙️ Settings management with themes and defaults
+            - 🎨 Dark/Light theme support
+            - ⚡ Comprehensive error handling and logging
+
             ### What's New
-            - Initial release
-            - File organization with custom rules
-            - Duplicate file finder
-            - Operation history and rollback
-            - Dark/Light theme support
+            - Initial release of TidyFiles
+            - Full-featured file organization system
+            - Duplicate finder with smart hashing
+            - Complete operation history and undo support
 
             ---
 
             **Note**: Windows may show a SmartScreen warning on first run. This is normal for new applications without Extended Validation certificates. Click "More info" → "Run anyway" to proceed.
+
+            **Download size**: MSI (~7MB), NSIS Setup (~7MB)
           draft: false
           prerelease: false
 
@@ -114,7 +142,7 @@ jobs:
           asset_name: TidyFiles_${{ steps.get_version.outputs.VERSION }}_x64-setup.exe
           asset_content_type: application/x-msdownload
 
-      - name: Upload artifacts
+      - name: Upload artifacts for backup
         uses: actions/upload-artifact@v4
         with:
           name: tidyfiles-windows-release-v${{ steps.get_version.outputs.VERSION }}
