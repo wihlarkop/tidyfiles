@@ -1,4 +1,4 @@
-name: Release Windows Installer
+name: Release Cross-Platform
 
 on:
   push:
@@ -13,8 +13,72 @@ permissions:
   contents: write  # Required to create releases and upload assets
 
 jobs:
+  create-release:
+    name: Create Release
+    runs-on: ubuntu-latest
+    outputs:
+      upload_url: ${{ steps.create_release.outputs.upload_url }}
+      version: ${{ steps.get_version.outputs.VERSION }}
+    steps:
+      - name: Get version from tag
+        id: get_version
+        run: echo "VERSION=${GITHUB_REF#refs/tags/v}" >> $GITHUB_OUTPUT
+
+      - name: Create Release
+        id: create_release
+        uses: actions/create-release@v1
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          tag_name: ${{ github.ref }}
+          release_name: TidyFiles v${{ steps.get_version.outputs.VERSION }}
+          body: |
+            ## TidyFiles v${{ steps.get_version.outputs.VERSION }}
+
+            ### Downloads
+            - **Windows**: MSI Installer or NSIS Setup
+            - **macOS**: DMG (Apple Silicon & Intel)
+            - **Linux**: AppImage, Deb, or RPM
+
+            ### Installation
+
+            #### Windows
+            1. Download either the `.msi` or `-setup.exe` file
+            2. Run the installer
+            3. Follow the installation wizard
+
+            #### macOS
+            1. Download the `.dmg` file
+            2. Open the DMG and drag TidyFiles to Applications
+            3. Right-click the app and select "Open" (first launch only)
+
+            #### Linux
+            1. **AppImage**: Download, make executable (`chmod +x`), and run
+            2. **Deb**: `sudo dpkg -i tidyfiles_*.deb`
+            3. **RPM**: `sudo rpm -i tidyfiles-*.rpm`
+
+            ### System Requirements
+            - **Windows**: Windows 10 or later
+            - **macOS**: macOS 10.13 (High Sierra) or later
+            - **Linux**: Modern Linux distribution with GTK 3.0+
+
+            ### Features
+            - 📁 File organization with custom rules and conditions
+            - ☑️ Batch file selection for selective organization
+            - 🧪 Dry run mode for testing rules
+            - 🏷️ Custom placeholders for file patterns (dates, size, metadata)
+            - 🔍 Duplicate file finder with hash-based detection
+            - 📜 Operation history with rollback support
+            - 🔎 Search and filter across all views
+            - ⚙️ Settings management with themes and defaults
+            - 🎨 Dark/Light theme support
+            - ⚡ Comprehensive error handling and logging
+          draft: false
+          prerelease: false
+
   build-windows:
-    name: Build Windows Release
+    name: Build Windows
+    needs: create-release
     runs-on: windows-latest
 
     steps:
@@ -56,83 +120,19 @@ jobs:
       - name: Install frontend dependencies
         run: pnpm install --frozen-lockfile
 
-      # Uncomment when you have a code signing certificate
-      # - name: Setup code signing
-      #   run: |
-      #     echo "${{ secrets.WINDOWS_CERTIFICATE }}" | base64 --decode > cert.pfx
-      #     # Add certificate to Windows certificate store
-
-      - name: Build Tauri app (release)
+      - name: Build Tauri app
         run: pnpm tauri build
         env:
-          # Uncomment when you have a code signing certificate
-          # TAURI_SIGNING_PRIVATE_KEY: ${{ secrets.TAURI_PRIVATE_KEY }}
-          # TAURI_SIGNING_PRIVATE_KEY_PASSWORD: ${{ secrets.TAURI_KEY_PASSWORD }}
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-
-      - name: Get version from tag
-        id: get_version
-        shell: bash
-        run: echo "VERSION=${GITHUB_REF#refs/tags/v}" >> $GITHUB_OUTPUT
-
-      - name: Create Release
-        id: create_release
-        uses: actions/create-release@v1
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        with:
-          tag_name: ${{ github.ref }}
-          release_name: TidyFiles v${{ steps.get_version.outputs.VERSION }}
-          body: |
-            ## TidyFiles v${{ steps.get_version.outputs.VERSION }}
-
-            ### Windows Installers
-            - **MSI Installer** (recommended for enterprise)
-            - **NSIS Setup** (recommended for individual users)
-
-            ### Installation
-            1. Download either the `.msi` or `-setup.exe` file below
-            2. Run the installer
-            3. Follow the installation wizard
-
-            ### System Requirements
-            - Windows 10 or later
-            - WebView2 runtime (automatically installed if not present)
-
-            ### Features
-            - 📁 File organization with custom rules and conditions
-            - ☑️ Batch file selection for selective organization
-            - 🧪 Dry run mode for testing rules
-            - 🏷️ Custom placeholders for file patterns (dates, size, metadata)
-            - 🔍 Duplicate file finder with hash-based detection
-            - 📜 Operation history with rollback support
-            - 🔎 Search and filter across all views
-            - ⚙️ Settings management with themes and defaults
-            - 🎨 Dark/Light theme support
-            - ⚡ Comprehensive error handling and logging
-
-            ### What's New
-            - Initial release of TidyFiles
-            - Full-featured file organization system
-            - Duplicate finder with smart hashing
-            - Complete operation history and undo support
-
-            ---
-
-            **Note**: Windows may show a SmartScreen warning on first run. This is normal for new applications without Extended Validation certificates. Click "More info" → "Run anyway" to proceed.
-
-            **Download size**: MSI (~7MB), NSIS Setup (~7MB)
-          draft: false
-          prerelease: false
 
       - name: Upload MSI Installer
         uses: actions/upload-release-asset@v1
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         with:
-          upload_url: ${{ steps.create_release.outputs.upload_url }}
-          asset_path: ./src-tauri/target/release/bundle/msi/TidyFiles_${{ steps.get_version.outputs.VERSION }}_x64_en-US.msi
-          asset_name: TidyFiles_${{ steps.get_version.outputs.VERSION }}_x64_en-US.msi
+          upload_url: ${{ needs.create-release.outputs.upload_url }}
+          asset_path: ./src-tauri/target/release/bundle/msi/TidyFiles_${{ needs.create-release.outputs.version }}_x64_en-US.msi
+          asset_name: TidyFiles_${{ needs.create-release.outputs.version }}_x64_en-US.msi
           asset_content_type: application/x-msi
 
       - name: Upload NSIS Setup
@@ -140,21 +140,177 @@ jobs:
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         with:
-          upload_url: ${{ steps.create_release.outputs.upload_url }}
-          asset_path: ./src-tauri/target/release/bundle/nsis/TidyFiles_${{ steps.get_version.outputs.VERSION }}_x64-setup.exe
-          asset_name: TidyFiles_${{ steps.get_version.outputs.VERSION }}_x64-setup.exe
+          upload_url: ${{ needs.create-release.outputs.upload_url }}
+          asset_path: ./src-tauri/target/release/bundle/nsis/TidyFiles_${{ needs.create-release.outputs.version }}_x64-setup.exe
+          asset_name: TidyFiles_${{ needs.create-release.outputs.version }}_x64-setup.exe
           asset_content_type: application/x-msdownload
 
+  build-macos:
+    name: Build macOS
+    needs: create-release
+    runs-on: macos-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      - name: Install pnpm
+        uses: pnpm/action-setup@v4
+
+      - name: Get pnpm store directory
+        shell: bash
+        run: |
+          echo "STORE_PATH=$(pnpm store path --silent)" >> $GITHUB_ENV
+
+      - name: Setup pnpm cache
+        uses: actions/cache@v4
+        with:
+          path: ${{ env.STORE_PATH }}
+          key: ${{ runner.os }}-pnpm-store-${{ hashFiles('**/pnpm-lock.yaml') }}
+          restore-keys: |
+            ${{ runner.os }}-pnpm-store-
+
+      - name: Setup Rust
+        uses: dtolnay/rust-toolchain@stable
+        with:
+          toolchain: stable
+          targets: aarch64-apple-darwin, x86_64-apple-darwin
+
+      - name: Rust cache
+        uses: Swatinem/rust-cache@v2
+        with:
+          workspaces: './src-tauri -> target'
+          cache-on-failure: true
+
+      - name: Install frontend dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Build Tauri app (Universal)
+        run: pnpm tauri build --target universal-apple-darwin
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Upload DMG
+        uses: actions/upload-release-asset@v1
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          upload_url: ${{ needs.create-release.outputs.upload_url }}
+          asset_path: ./src-tauri/target/universal-apple-darwin/release/bundle/dmg/TidyFiles_${{ needs.create-release.outputs.version }}_universal.dmg
+          asset_name: TidyFiles_${{ needs.create-release.outputs.version }}_universal.dmg
+          asset_content_type: application/x-apple-diskimage
+
+  build-linux:
+    name: Build Linux
+    needs: create-release
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      - name: Install pnpm
+        uses: pnpm/action-setup@v4
+
+      - name: Get pnpm store directory
+        shell: bash
+        run: |
+          echo "STORE_PATH=$(pnpm store path --silent)" >> $GITHUB_ENV
+
+      - name: Setup pnpm cache
+        uses: actions/cache@v4
+        with:
+          path: ${{ env.STORE_PATH }}
+          key: ${{ runner.os }}-pnpm-store-${{ hashFiles('**/pnpm-lock.yaml') }}
+          restore-keys: |
+            ${{ runner.os }}-pnpm-store-
+
+      - name: Setup Rust
+        uses: dtolnay/rust-toolchain@stable
+        with:
+          toolchain: stable
+
+      - name: Rust cache
+        uses: Swatinem/rust-cache@v2
+        with:
+          workspaces: './src-tauri -> target'
+          cache-on-failure: true
+
+      - name: Install system dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y libwebkit2gtk-4.1-dev \
+            build-essential \
+            curl \
+            wget \
+            file \
+            libxdo-dev \
+            libssl-dev \
+            libayatana-appindicator3-dev \
+            librsvg2-dev
+
+      - name: Install frontend dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Build Tauri app
+        run: pnpm tauri build
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Upload AppImage
+        uses: actions/upload-release-asset@v1
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          upload_url: ${{ needs.create-release.outputs.upload_url }}
+          asset_path: ./src-tauri/target/release/bundle/appimage/tidy-files_${{ needs.create-release.outputs.version }}_amd64.AppImage
+          asset_name: TidyFiles_${{ needs.create-release.outputs.version }}_amd64.AppImage
+          asset_content_type: application/x-executable
+
+      - name: Upload Deb
+        uses: actions/upload-release-asset@v1
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          upload_url: ${{ needs.create-release.outputs.upload_url }}
+          asset_path: ./src-tauri/target/release/bundle/deb/tidy-files_${{ needs.create-release.outputs.version }}_amd64.deb
+          asset_name: TidyFiles_${{ needs.create-release.outputs.version }}_amd64.deb
+          asset_content_type: application/vnd.debian.binary-package
+
+  generate-update-manifest:
+    name: Generate Update Manifest
+    needs: [create-release, build-windows, build-macos, build-linux]
+    runs-on: ubuntu-latest
+
+    steps:
       - name: Generate update manifest
         shell: bash
         run: |
           cat > latest.json << EOF
           {
-            "version": "${{ steps.get_version.outputs.VERSION }}",
+            "version": "${{ needs.create-release.outputs.version }}",
             "date": "$(date -u +%Y-%m-%dT%H:%M:%SZ)",
             "platforms": {
               "windows-x86_64": {
-                "url": "https://github.com/wihlarkop/tidyfiles/releases/download/v${{ steps.get_version.outputs.VERSION }}/TidyFiles_${{ steps.get_version.outputs.VERSION }}_x64-setup.exe",
+                "url": "https://github.com/wihlarkop/tidyfiles/releases/download/v${{ needs.create-release.outputs.version }}/TidyFiles_${{ needs.create-release.outputs.version }}_x64-setup.exe",
+                "signature": ""
+              },
+              "darwin-universal": {
+                "url": "https://github.com/wihlarkop/tidyfiles/releases/download/v${{ needs.create-release.outputs.version }}/TidyFiles_${{ needs.create-release.outputs.version }}_universal.dmg",
+                "signature": ""
+              },
+              "linux-x86_64": {
+                "url": "https://github.com/wihlarkop/tidyfiles/releases/download/v${{ needs.create-release.outputs.version }}/TidyFiles_${{ needs.create-release.outputs.version }}_amd64.AppImage",
                 "signature": ""
               }
             }
@@ -166,16 +322,7 @@ jobs:
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         with:
-          upload_url: ${{ steps.create_release.outputs.upload_url }}
+          upload_url: ${{ needs.create-release.outputs.upload_url }}
           asset_path: ./latest.json
           asset_name: latest.json
           asset_content_type: application/json
-
-      - name: Upload artifacts for backup
-        uses: actions/upload-artifact@v4
-        with:
-          name: tidyfiles-windows-release-v${{ steps.get_version.outputs.VERSION }}
-          path: |
-            src-tauri/target/release/bundle/msi/*.msi
-            src-tauri/target/release/bundle/nsis/*-setup.exe
-          retention-days: 90

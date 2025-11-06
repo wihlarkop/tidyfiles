@@ -34,7 +34,21 @@
       "icons/128x128@2x.png",
       "icons/icon.icns",
       "icons/icon.ico"
-    ]
+    ],
+    "category": "Utility",
+    "shortDescription": "Organize your files efficiently",
+    "longDescription": "TidyFiles is a powerful file organization tool that helps you organize your files with custom rules, find duplicates, and manage your file system efficiently.",
+    "macOS": {
+      "minimumSystemVersion": "10.13"
+    },
+    "linux": {
+      "deb": {
+        "depends": []
+      },
+      "appimage": {
+        "bundleMediaFramework": true
+      }
+    }
   },
   "plugins": {
     "updater": {
@@ -44,6 +58,12 @@
       ],
       "windows": {
         "installMode": "passive"
+      },
+      "macOS": {
+        "frameworks": []
+      },
+      "linux": {
+        "appimage": {}
       }
     }
   }
