@@ -542,7 +542,7 @@
                                 </div>
 
                                 <p class="text-sm text-gray-600 dark:text-gray-400 mt-2">
-                                    Current version: v0.1.0
+                                    Current version: v0.2.0
                                 </p>
                             </div>
                         </div>
