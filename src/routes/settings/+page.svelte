@@ -8,6 +8,8 @@
     import type {AppSettings} from '$lib/types';
     import ConfirmDialog from '$lib/components/ConfirmDialog.svelte';
     import Tooltip from '$lib/components/Tooltip.svelte';
+    import {check} from '@tauri-apps/plugin-updater';
+    import {relaunch} from '@tauri-apps/plugin-process';
 
     let localSettings = $state<AppSettings | null>(null);
     let activeTab = $state<'scan' | 'organize' | 'duplicates' | 'ui' | 'general'>('scan');
@@ -15,6 +17,11 @@
     let isInitializing = $state(true);
     let initError = $state<string | null>(null);
     let showResetDialog = $state(false);
+    let checkingUpdates = $state(false);
+    let updateInfo = $state<{version: string, body: string} | null>(null);
+    let showUpdateDialog = $state(false);
+    let downloadingUpdate = $state(false);
+    let downloadProgress = $state(0);
 
     onMount(async () => {
         const timeoutId = setTimeout(() => {
@@ -104,6 +111,79 @@
             localSettings = JSON.parse(JSON.stringify(settingsStore.settings));
             hasUnsavedChanges = false;
         }
+    }
+
+    async function handleCheckForUpdates() {
+        if (checkingUpdates) return;
+
+        checkingUpdates = true;
+        try {
+            toastStore.info('Checking for updates...');
+            const update = await check();
+
+            if (update) {
+                updateInfo = {
+                    version: update.version,
+                    body: update.body || ''
+                };
+                showUpdateDialog = true;
+                toastStore.success(`Update available: v${update.version}`);
+            } else {
+                toastStore.success('You are using the latest version!');
+            }
+        } catch (error) {
+            console.error('Failed to check for updates:', error);
+            toastStore.error('Failed to check for updates');
+        } finally {
+            checkingUpdates = false;
+        }
+    }
+
+    async function handleDownloadUpdate() {
+        if (downloadingUpdate) return;
+
+        downloadingUpdate = true;
+        downloadProgress = 0;
+
+        try {
+            const update = await check();
+            if (!update) {
+                toastStore.info('No update available');
+                downloadingUpdate = false;
+                return;
+            }
+
+            toastStore.info('Downloading update...');
+
+            await update.downloadAndInstall((event) => {
+                switch (event.event) {
+                    case 'Started':
+                        downloadProgress = 0;
+                        break;
+                    case 'Progress':
+                        downloadProgress = event.data.chunkLength / event.data.contentLength! * 100;
+                        break;
+                    case 'Finished':
+                        downloadProgress = 100;
+                        break;
+                }
+            });
+
+            toastStore.success('Update installed! Restarting...');
+
+            setTimeout(async () => {
+                await relaunch();
+            }, 1000);
+        } catch (error) {
+            console.error('Failed to install update:', error);
+            toastStore.error('Failed to install update');
+            downloadingUpdate = false;
+        }
+    }
+
+    function dismissUpdateDialog() {
+        showUpdateDialog = false;
+        updateInfo = null;
     }
 </script>
 
@@ -412,6 +492,35 @@
                                     </div>
                                 </div>
                             {/if}
+
+                            <!-- Check for Updates -->
+                            <div class="border-t border-gray-200 dark:border-gray-700 pt-4">
+                                <div class="block font-medium text-gray-700 dark:text-gray-300 mb-3">
+                                    App Updates
+                                </div>
+                                <button
+                                    onclick={handleCheckForUpdates}
+                                    disabled={checkingUpdates}
+                                    class="flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700
+                                           disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                                >
+                                    {#if checkingUpdates}
+                                        <svg class="animate-spin h-4 w-4" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                                            <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                                            <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                                        </svg>
+                                        Checking...
+                                    {:else}
+                                        <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12" />
+                                        </svg>
+                                        Check for Updates
+                                    {/if}
+                                </button>
+                                <p class="text-sm text-gray-600 dark:text-gray-400 mt-2">
+                                    Current version: v0.1.0
+                                </p>
+                            </div>
                         </div>
                     {/if}
                 </div>
@@ -475,3 +584,63 @@
         onConfirm={confirmReset}
         onCancel={cancelReset}
 />
+
+<!-- Update Available Dialog -->
+{#if showUpdateDialog && updateInfo}
+    <div class="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
+        <div class="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg shadow-xl max-w-md w-full mx-4 p-6">
+            <div class="flex items-start gap-3 mb-4">
+                <div class="flex-shrink-0 w-10 h-10 rounded-full bg-blue-100 dark:bg-blue-900 flex items-center justify-center">
+                    <svg class="w-6 h-6 text-blue-600 dark:text-blue-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12" />
+                    </svg>
+                </div>
+                <div class="flex-1">
+                    <h3 class="text-lg font-semibold text-gray-900 dark:text-white">Update Available</h3>
+                    <p class="text-sm text-gray-600 dark:text-gray-400 mt-1">
+                        Version {updateInfo.version} is now available
+                    </p>
+                </div>
+            </div>
+
+            {#if updateInfo.body}
+                <div class="mb-4 p-3 bg-gray-50 dark:bg-gray-700 rounded-lg max-h-48 overflow-y-auto">
+                    <p class="text-sm text-gray-900 dark:text-white whitespace-pre-wrap">{updateInfo.body}</p>
+                </div>
+            {/if}
+
+            {#if downloadingUpdate}
+                <div class="mb-4">
+                    <div class="flex justify-between text-sm mb-2">
+                        <span class="text-gray-600 dark:text-gray-400">Downloading...</span>
+                        <span class="text-gray-900 dark:text-white font-medium">{downloadProgress.toFixed(0)}%</span>
+                    </div>
+                    <div class="w-full bg-gray-200 dark:bg-gray-700 rounded-full h-2">
+                        <div
+                            class="bg-blue-600 h-2 rounded-full transition-all duration-300"
+                            style="width: {downloadProgress}%"
+                        ></div>
+                    </div>
+                </div>
+            {/if}
+
+            <div class="flex gap-3">
+                {#if !downloadingUpdate}
+                    <button
+                        onclick={dismissUpdateDialog}
+                        class="flex-1 px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors text-gray-900 dark:text-white"
+                    >
+                        Later
+                    </button>
+                {/if}
+                <button
+                    onclick={handleDownloadUpdate}
+                    disabled={downloadingUpdate}
+                    class="flex-1 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                >
+                    {downloadingUpdate ? 'Installing...' : 'Update Now'}
+                </button>
+            </div>
+        </div>
+    </div>
+{/if}

@@ -145,6 +145,32 @@ jobs:
           asset_name: TidyFiles_${{ steps.get_version.outputs.VERSION }}_x64-setup.exe
           asset_content_type: application/x-msdownload
 
+      - name: Generate update manifest
+        shell: bash
+        run: |
+          cat > latest.json << EOF
+          {
+            "version": "${{ steps.get_version.outputs.VERSION }}",
+            "date": "$(date -u +%Y-%m-%dT%H:%M:%SZ)",
+            "platforms": {
+              "windows-x86_64": {
+                "url": "https://github.com/wihlarkop/tidyfiles/releases/download/v${{ steps.get_version.outputs.VERSION }}/TidyFiles_${{ steps.get_version.outputs.VERSION }}_x64-setup.exe",
+                "signature": ""
+              }
+            }
+          }
+          EOF
+
+      - name: Upload update manifest
+        uses: actions/upload-release-asset@v1
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          upload_url: ${{ steps.create_release.outputs.upload_url }}
+          asset_path: ./latest.json
+          asset_name: latest.json
+          asset_content_type: application/json
+
       - name: Upload artifacts for backup
         uses: actions/upload-artifact@v4
         with:
