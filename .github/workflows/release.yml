@@ -35,7 +35,7 @@ jobs:
           ### Downloads
           - **Windows**: MSI Installer or NSIS Setup
           - **macOS**: DMG (Apple Silicon & Intel)
-          - **Linux**: AppImage, Deb, or RPM
+          - **Linux**: AppImage, Deb, or Arch Package
 
           ### Installation
 
@@ -50,9 +50,9 @@ jobs:
           3. Right-click the app and select \"Open\" (first launch only)
 
           #### Linux
-          1. **AppImage**: Download, make executable (\`chmod +x\`), and run
-          2. **Deb**: \`sudo dpkg -i tidyfiles_*.deb\`
-          3. **RPM**: \`sudo rpm -i tidyfiles-*.rpm\`
+          1. **AppImage**: Download, make executable (\`chmod +x\`), and run (works on all distros)
+          2. **Deb**: \`sudo dpkg -i tidyfiles_*.deb\` (Debian/Ubuntu)
+          3. **Arch**: \`sudo pacman -U tidyfiles-*.pkg.tar.zst\` (Arch/Manjaro)
 
           ### System Requirements
           - **Windows**: Windows 10 or later
@@ -327,6 +327,73 @@ jobs:
             gh release upload v${{ needs.create-release.outputs.version }} "$DEB_FILE" --clobber
           else
             echo "No Deb file found"
+            exit 1
+          fi
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Create Arch Linux package
+        shell: bash
+        run: |
+          # Create package directory structure
+          PKG_NAME="tidyfiles"
+          PKG_VERSION="${{ needs.create-release.outputs.version }}"
+          PKG_DIR="${PKG_NAME}-${PKG_VERSION}"
+
+          mkdir -p "${PKG_DIR}/usr/bin"
+          mkdir -p "${PKG_DIR}/usr/share/applications"
+          mkdir -p "${PKG_DIR}/usr/share/pixmaps"
+
+          # Copy binary
+          cp src-tauri/target/release/tidyfiles "${PKG_DIR}/usr/bin/"
+          chmod +x "${PKG_DIR}/usr/bin/tidyfiles"
+
+          # Create desktop entry
+          cat > "${PKG_DIR}/usr/share/applications/tidyfiles.desktop" <<EOF
+          [Desktop Entry]
+          Name=TidyFiles
+          Comment=Organize your files efficiently
+          Exec=tidyfiles
+          Icon=tidyfiles
+          Type=Application
+          Categories=Utility;FileTools;
+          Terminal=false
+          EOF
+
+          # Copy icon (using a placeholder for now, will update with actual icon)
+          touch "${PKG_DIR}/usr/share/pixmaps/tidyfiles.png"
+
+          # Create .PKGINFO
+          cat > "${PKG_DIR}/.PKGINFO" <<EOF
+          pkgname = tidyfiles
+          pkgver = ${PKG_VERSION}-1
+          pkgdesc = Organize your files efficiently with custom rules and smart features
+          url = https://github.com/wihlarkop/tidyfiles
+          builddate = $(date +%s)
+          packager = GitHub Actions
+          size = $(du -sb "${PKG_DIR}" | cut -f1)
+          arch = x86_64
+          license = MIT
+          depend = webkit2gtk
+          depend = gtk3
+          EOF
+
+          # Create package
+          cd "${PKG_DIR}"
+          tar -czf .PKGINFO .PKGINFO
+          tar -czf ../tidyfiles-${PKG_VERSION}-1-x86_64.pkg.tar.zst * .PKGINFO
+          cd ..
+
+          echo "Arch package created: tidyfiles-${PKG_VERSION}-1-x86_64.pkg.tar.zst"
+
+      - name: Upload Arch Package
+        shell: bash
+        run: |
+          ARCH_FILE=$(find . -maxdepth 1 -name "tidyfiles-*-x86_64.pkg.tar.zst" -type f | head -n 1)
+          if [ -n "$ARCH_FILE" ]; then
+            gh release upload v${{ needs.create-release.outputs.version }} "$ARCH_FILE" --clobber
+          else
+            echo "No Arch package found"
             exit 1
           fi
         env:
