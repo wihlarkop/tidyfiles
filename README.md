@@ -77,13 +77,114 @@ TidyFiles is a powerful desktop application that helps you automatically organiz
 
 ## 📥 Installation
 
+### System Requirements
+
+#### Windows
+- **Operating System**: Windows 10 or later (64-bit)
+- **Dependencies**: WebView2 Runtime (automatically installed with the app)
+- **Disk Space**: ~30 MB
+- **RAM**: 4 GB minimum, 8 GB recommended
+
+#### macOS
+- **Operating System**: macOS 10.13 (High Sierra) or later
+- **Architecture**: Intel (x86_64) or Apple Silicon (ARM64)
+- **Disk Space**: ~40 MB
+- **RAM**: 4 GB minimum, 8 GB recommended
+
+#### Linux
+- **Operating System**: Modern Linux distribution with glibc 2.31+
+- **Desktop Environment**: Any (GNOME, KDE, XFCE, etc.)
+- **Display Server**: X11 or Wayland
+- **Disk Space**: ~35 MB
+- **RAM**: 4 GB minimum, 8 GB recommended
+
+**Required Dependencies:**
+
+| Distribution | Required Packages |
+|--------------|------------------|
+| **Arch / Manjaro** | `webkit2gtk gtk3` |
+| **Debian / Ubuntu** | `libwebkit2gtk-4.1-0 libayatana-appindicator3-1` |
+| **Fedora / RHEL** | `webkit2gtk4.1` |
+| **Other** | Use AppImage (no dependencies needed) |
+
 ### Download Pre-built Binaries
 
-Download the latest installer for your platform from the [Releases](https://github.com/wihlarkop/tidyfiles/releases) page:
+Download the latest installer from the [Releases](https://github.com/wihlarkop/tidyfiles/releases) page:
 
-- **Windows**: `TidyFiles_x.x.x_x64_setup.exe` or `.msi`
-- **macOS**: `TidyFiles_x.x.x_x64.dmg` or `TidyFiles_x.x.x_aarch64.dmg`
-- **Linux**: `TidyFiles_x.x.x_amd64.deb`, `.rpm`, or `.AppImage`
+#### Windows
+- **NSIS Setup** (recommended): `TidyFiles_x.x.x_x64-setup.exe`
+- **MSI Installer** (for IT/enterprise): `TidyFiles_x.x.x_x64_en-US.msi`
+
+**Installation:**
+1. Download the setup file
+2. Run the installer
+3. Follow the installation wizard
+4. Note: Windows SmartScreen may show a warning - click "More info" → "Run anyway"
+
+#### macOS
+- **Universal DMG**: `TidyFiles_x.x.x_universal.dmg` (works on both Intel and Apple Silicon)
+
+**Installation:**
+1. Download the DMG file
+2. Open the DMG
+3. Drag TidyFiles to your Applications folder
+4. On first launch: Right-click → "Open" (to bypass Gatekeeper)
+
+**If you see "App is damaged" error:**
+```bash
+xattr -cr /Applications/TidyFiles.app
+```
+
+#### Linux
+
+**For Arch Linux / Manjaro (Recommended):**
+```bash
+# 1. Install dependencies
+sudo pacman -S webkit2gtk gtk3
+
+# 2. Download and install package
+wget https://github.com/wihlarkop/tidyfiles/releases/latest/download/tidyfiles-x.x.x-1-x86_64.pkg.tar.zst
+sudo pacman -U tidyfiles-x.x.x-1-x86_64.pkg.tar.zst
+```
+
+**For Debian / Ubuntu:**
+```bash
+# Download and install
+wget https://github.com/wihlarkop/tidyfiles/releases/latest/download/TidyFiles_x.x.x_amd64.deb
+sudo dpkg -i TidyFiles_x.x.x_amd64.deb
+
+# If you get dependency errors:
+sudo apt-get install -f
+```
+
+**For Any Linux Distribution (AppImage):**
+```bash
+# Download
+wget https://github.com/wihlarkop/tidyfiles/releases/latest/download/TidyFiles_x.x.x_amd64.AppImage
+
+# Make executable
+chmod +x TidyFiles_x.x.x_amd64.AppImage
+
+# Run
+./TidyFiles_x.x.x_amd64.AppImage
+```
+
+**Optional: Add to Application Menu**
+```bash
+# Move to /opt
+sudo mv TidyFiles_x.x.x_amd64.AppImage /opt/tidyfiles
+
+# Create desktop entry
+cat > ~/.local/share/applications/tidyfiles.desktop <<EOF
+[Desktop Entry]
+Name=TidyFiles
+Exec=/opt/tidyfiles
+Type=Application
+Categories=Utility;FileTools;
+Icon=tidyfiles
+Terminal=false
+EOF
+```
 
 ### Build from Source
 
@@ -160,6 +261,44 @@ pnpm tauri build
 - `src-tauri/target/release/bundle/deb/tidyfiles_x.x.x_amd64.deb`
 - `src-tauri/target/release/bundle/rpm/tidyfiles-x.x.x-1.x86_64.rpm`
 - `src-tauri/target/release/bundle/appimage/tidyfiles_x.x.x_amd64.AppImage`
+
+## Best Practices for Using TidyFiles
+
+### Safety First
+1. **Always use Dry Run Mode first** - Test your rules before applying them to ensure they work as expected
+2. **Start with a test folder** - Try organizing a small folder before applying rules to important files
+3. **Back up important files** - While TidyFiles has undo functionality, it's always good to have backups
+4. **Review the preview** - Check which files match your rules before organizing
+
+### Organizing Tips
+1. **Use descriptive rule names** - Makes it easier to manage multiple rules
+2. **Set clear priorities** - Lower numbers execute first (e.g., 1, 2, 3...)
+3. **Test with small batches** - Use file selection to organize a few files at a time
+4. **Check operation history** - Review what was done and undo if needed
+
+### Performance
+1. **Limit scan depth** - Set maximum depth to avoid scanning too many nested folders
+2. **Filter by extension** - Only scan file types you need to organize
+3. **Use batch selection** - Select only files you want to organize instead of all matches
+
+### Dependency Installation
+
+**Linux users:** Make sure dependencies are installed before first run:
+
+```bash
+# Arch / Manjaro
+sudo pacman -S webkit2gtk gtk3
+
+# Debian / Ubuntu
+sudo apt install libwebkit2gtk-4.1-0 libayatana-appindicator3-1
+
+# Fedora
+sudo dnf install webkit2gtk4.1
+```
+
+**If TidyFiles shows a blank screen on Linux:**
+- The app will show an error message with installation instructions
+- Or try running with: `GDK_BACKEND=x11 tidyfiles`
 
 ## 📚 Usage Guide
 
