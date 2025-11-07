@@ -41,6 +41,8 @@ incremental = true
 opt-level = 1  # Minimal optimization for faster debug builds
 
 [profile.release]
+opt-level = "z"  # Optimize for size (also faster linking)
 strip = true  # Strip symbols for smaller binaries
 lto = "thin"  # Thin LTO for faster linking while keeping good optimization
 codegen-units = 1  # Better optimization at cost of compile time
+panic = "abort"  # Smaller binary, no unwinding
