@@ -398,13 +398,16 @@ jobs:
           depend = gtk3
           EOF
 
-          # Create package
+          # Create package using zstd compression
           cd "${PKG_DIR}"
-          tar -czf .PKGINFO .PKGINFO
-          tar -czf ../tidyfiles-${PKG_VERSION}-1-x86_64.pkg.tar.zst * .PKGINFO
+
+          # Create the package archive with all files including .PKGINFO
+          tar --zstd -cf ../tidyfiles-${PKG_VERSION}-1-x86_64.pkg.tar.zst .PKGINFO usr/
+
           cd ..
 
           echo "Arch package created: tidyfiles-${PKG_VERSION}-1-x86_64.pkg.tar.zst"
+          ls -lh tidyfiles-${PKG_VERSION}-1-x86_64.pkg.tar.zst
 
       - name: Upload Arch Package
         shell: bash
