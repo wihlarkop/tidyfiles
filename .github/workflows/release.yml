@@ -125,25 +125,39 @@ jobs:
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
+      - name: List generated files (debug)
+        shell: bash
+        run: |
+          echo "=== MSI files ==="
+          ls -la src-tauri/target/release/bundle/msi/ || echo "No MSI files"
+          echo "=== NSIS files ==="
+          ls -la src-tauri/target/release/bundle/nsis/ || echo "No NSIS files"
+
       - name: Upload MSI Installer
-        uses: actions/upload-release-asset@v1
+        shell: bash
+        run: |
+          MSI_FILE=$(find src-tauri/target/release/bundle/msi -name "*.msi" -type f | head -n 1)
+          if [ -n "$MSI_FILE" ]; then
+            gh release upload v${{ needs.create-release.outputs.version }} "$MSI_FILE" --clobber
+          else
+            echo "No MSI file found"
+            exit 1
+          fi
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        with:
-          upload_url: ${{ needs.create-release.outputs.upload_url }}
-          asset_path: ./src-tauri/target/release/bundle/msi/TidyFiles_${{ needs.create-release.outputs.version }}_x64_en-US.msi
-          asset_name: TidyFiles_${{ needs.create-release.outputs.version }}_x64_en-US.msi
-          asset_content_type: application/x-msi
 
       - name: Upload NSIS Setup
-        uses: actions/upload-release-asset@v1
+        shell: bash
+        run: |
+          NSIS_FILE=$(find src-tauri/target/release/bundle/nsis -name "*-setup.exe" -type f | head -n 1)
+          if [ -n "$NSIS_FILE" ]; then
+            gh release upload v${{ needs.create-release.outputs.version }} "$NSIS_FILE" --clobber
+          else
+            echo "No NSIS file found"
+            exit 1
+          fi
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        with:
-          upload_url: ${{ needs.create-release.outputs.upload_url }}
-          asset_path: ./src-tauri/target/release/bundle/nsis/TidyFiles_${{ needs.create-release.outputs.version }}_x64-setup.exe
-          asset_name: TidyFiles_${{ needs.create-release.outputs.version }}_x64-setup.exe
-          asset_content_type: application/x-msdownload
 
   build-macos:
     name: Build macOS
@@ -195,15 +209,24 @@ jobs:
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
+      - name: List generated files (debug)
+        shell: bash
+        run: |
+          echo "=== DMG files ==="
+          ls -la src-tauri/target/universal-apple-darwin/release/bundle/dmg/ || echo "No DMG files"
+
       - name: Upload DMG
-        uses: actions/upload-release-asset@v1
+        shell: bash
+        run: |
+          DMG_FILE=$(find src-tauri/target/universal-apple-darwin/release/bundle/dmg -name "*.dmg" -type f | head -n 1)
+          if [ -n "$DMG_FILE" ]; then
+            gh release upload v${{ needs.create-release.outputs.version }} "$DMG_FILE" --clobber
+          else
+            echo "No DMG file found"
+            exit 1
+          fi
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        with:
-          upload_url: ${{ needs.create-release.outputs.upload_url }}
-          asset_path: ./src-tauri/target/universal-apple-darwin/release/bundle/dmg/TidyFiles_${{ needs.create-release.outputs.version }}_universal.dmg
-          asset_name: TidyFiles_${{ needs.create-release.outputs.version }}_universal.dmg
-          asset_content_type: application/x-apple-diskimage
 
   build-linux:
     name: Build Linux
@@ -267,25 +290,39 @@ jobs:
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
+      - name: List generated files (debug)
+        shell: bash
+        run: |
+          echo "=== AppImage files ==="
+          ls -la src-tauri/target/release/bundle/appimage/ || echo "No AppImage files"
+          echo "=== Deb files ==="
+          ls -la src-tauri/target/release/bundle/deb/ || echo "No Deb files"
+
       - name: Upload AppImage
-        uses: actions/upload-release-asset@v1
+        shell: bash
+        run: |
+          APPIMAGE_FILE=$(find src-tauri/target/release/bundle/appimage -name "*.AppImage" -type f | head -n 1)
+          if [ -n "$APPIMAGE_FILE" ]; then
+            gh release upload v${{ needs.create-release.outputs.version }} "$APPIMAGE_FILE" --clobber
+          else
+            echo "No AppImage file found"
+            exit 1
+          fi
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        with:
-          upload_url: ${{ needs.create-release.outputs.upload_url }}
-          asset_path: ./src-tauri/target/release/bundle/appimage/tidy-files_${{ needs.create-release.outputs.version }}_amd64.AppImage
-          asset_name: TidyFiles_${{ needs.create-release.outputs.version }}_amd64.AppImage
-          asset_content_type: application/x-executable
 
       - name: Upload Deb
-        uses: actions/upload-release-asset@v1
+        shell: bash
+        run: |
+          DEB_FILE=$(find src-tauri/target/release/bundle/deb -name "*.deb" -type f | head -n 1)
+          if [ -n "$DEB_FILE" ]; then
+            gh release upload v${{ needs.create-release.outputs.version }} "$DEB_FILE" --clobber
+          else
+            echo "No Deb file found"
+            exit 1
+          fi
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        with:
-          upload_url: ${{ needs.create-release.outputs.upload_url }}
-          asset_path: ./src-tauri/target/release/bundle/deb/tidy-files_${{ needs.create-release.outputs.version }}_amd64.deb
-          asset_name: TidyFiles_${{ needs.create-release.outputs.version }}_amd64.deb
-          asset_content_type: application/vnd.debian.binary-package
 
   generate-update-manifest:
     name: Generate Update Manifest
@@ -293,36 +330,49 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
+      - name: Get release assets
+        shell: bash
+        run: |
+          gh release view v${{ needs.create-release.outputs.version }} --repo wihlarkop/tidyfiles --json assets -q '.assets[].name' > assets.txt
+          cat assets.txt
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
       - name: Generate update manifest
         shell: bash
         run: |
+          # Get asset names
+          NSIS_FILE=$(grep -E '.*-setup\.exe$' assets.txt | head -n 1)
+          DMG_FILE=$(grep -E '.*\.dmg$' assets.txt | head -n 1)
+          APPIMAGE_FILE=$(grep -E '.*\.AppImage$' assets.txt | head -n 1)
+
           cat > latest.json << EOF
           {
             "version": "${{ needs.create-release.outputs.version }}",
             "date": "$(date -u +%Y-%m-%dT%H:%M:%SZ)",
             "platforms": {
               "windows-x86_64": {
-                "url": "https://github.com/wihlarkop/tidyfiles/releases/download/v${{ needs.create-release.outputs.version }}/TidyFiles_${{ needs.create-release.outputs.version }}_x64-setup.exe",
+                "url": "https://github.com/wihlarkop/tidyfiles/releases/download/v${{ needs.create-release.outputs.version }}/${NSIS_FILE}",
                 "signature": ""
               },
               "darwin-universal": {
-                "url": "https://github.com/wihlarkop/tidyfiles/releases/download/v${{ needs.create-release.outputs.version }}/TidyFiles_${{ needs.create-release.outputs.version }}_universal.dmg",
+                "url": "https://github.com/wihlarkop/tidyfiles/releases/download/v${{ needs.create-release.outputs.version }}/${DMG_FILE}",
                 "signature": ""
               },
               "linux-x86_64": {
-                "url": "https://github.com/wihlarkop/tidyfiles/releases/download/v${{ needs.create-release.outputs.version }}/TidyFiles_${{ needs.create-release.outputs.version }}_amd64.AppImage",
+                "url": "https://github.com/wihlarkop/tidyfiles/releases/download/v${{ needs.create-release.outputs.version }}/${APPIMAGE_FILE}",
                 "signature": ""
               }
             }
           }
           EOF
-
-      - name: Upload update manifest
-        uses: actions/upload-release-asset@v1
+          cat latest.json
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        with:
-          upload_url: ${{ needs.create-release.outputs.upload_url }}
-          asset_path: ./latest.json
-          asset_name: latest.json
-          asset_content_type: application/json
+
+      - name: Upload update manifest
+        shell: bash
+        run: |
+          gh release upload v${{ needs.create-release.outputs.version }} latest.json --clobber --repo wihlarkop/tidyfiles
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
