@@ -33,43 +33,19 @@ jobs:
             --notes "## TidyFiles v${{ steps.get_version.outputs.VERSION }}
 
           ### Downloads
-          - **Windows**: MSI Installer or NSIS Setup
-          - **macOS**: DMG (Apple Silicon & Intel)
+          - **Windows**: MSI or NSIS Setup
+          - **macOS**: Universal DMG (Intel + Apple Silicon)
           - **Linux**: AppImage, Deb, or Arch Package
 
-          ### Installation
+          ### Installation & Documentation
+          See the [README](https://github.com/wihlarkop/tidyfiles#-installation) for detailed installation instructions, system requirements, and best practices.
 
-          #### Windows
-          1. Download either the \`.msi\` or \`-setup.exe\` file
-          2. Run the installer
-          3. Follow the installation wizard
-
-          #### macOS
-          1. Download the \`.dmg\` file
-          2. Open the DMG and drag TidyFiles to Applications
-          3. Right-click the app and select \"Open\" (first launch only)
-
-          #### Linux
-          1. **AppImage**: Download, make executable (\`chmod +x\`), and run (works on all distros)
-          2. **Deb**: \`sudo dpkg -i tidyfiles_*.deb\` (Debian/Ubuntu)
-          3. **Arch**: First install dependencies: \`sudo pacman -S webkit2gtk gtk3\`, then \`sudo pacman -U tidyfiles-*.pkg.tar.zst\` (Arch/Manjaro)
-
-          ### System Requirements
-          - **Windows**: Windows 10 or later
-          - **macOS**: macOS 10.13 (High Sierra) or later
-          - **Linux**: Modern Linux distribution with GTK 3.0+
-
-          ### Features
-          - 📁 File organization with custom rules and conditions
-          - ☑️ Batch file selection for selective organization
-          - 🧪 Dry run mode for testing rules
-          - 🏷️ Custom placeholders for file patterns (dates, size, metadata)
-          - 🔍 Duplicate file finder with hash-based detection
-          - 📜 Operation history with rollback support
-          - 🔎 Search and filter across all views
-          - ⚙️ Settings management with themes and defaults
-          - 🎨 Dark/Light theme support
-          - ⚡ Comprehensive error handling and logging"
+          **Quick Install:**
+          - **Windows**: Run the installer
+          - **macOS**: Drag to Applications folder
+          - **Linux (Arch)**: \`sudo pacman -S webkit2gtk gtk3 && sudo pacman -U tidyfiles-*.pkg.tar.zst\`
+          - **Linux (Debian/Ubuntu)**: \`sudo dpkg -i tidyfiles_*.deb\`
+          - **Linux (Other)**: Use AppImage"
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
