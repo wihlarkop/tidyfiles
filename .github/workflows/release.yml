@@ -7,7 +7,9 @@ on:
 
 env:
   CARGO_TERM_COLOR: always
-  CARGO_INCREMENTAL: 1
+  CARGO_INCREMENTAL: 0  # Disable for release builds (faster)
+  CARGO_REGISTRIES_CRATES_IO_PROTOCOL: sparse  # Faster dependency fetching
+  CARGO_NET_GIT_FETCH_WITH_CLI: true  # Faster git operations
 
 permissions:
   contents: write  # Required to create releases and upload assets
@@ -111,12 +113,13 @@ jobs:
         with:
           workspaces: './src-tauri -> target'
           cache-on-failure: true
+          shared-key: 'windows-release'
 
       - name: Install frontend dependencies
         run: pnpm install --frozen-lockfile
 
       - name: Build Tauri app
-        run: pnpm tauri build
+        run: pnpm tauri build --ci
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
@@ -195,12 +198,13 @@ jobs:
         with:
           workspaces: './src-tauri -> target'
           cache-on-failure: true
+          shared-key: 'macos-release'
 
       - name: Install frontend dependencies
         run: pnpm install --frozen-lockfile
 
       - name: Build Tauri app (Universal)
-        run: pnpm tauri build --target universal-apple-darwin
+        run: pnpm tauri build --ci --target universal-apple-darwin
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
@@ -263,6 +267,15 @@ jobs:
         with:
           workspaces: './src-tauri -> target'
           cache-on-failure: true
+          shared-key: 'linux-release'
+
+      - name: Cache apt packages
+        uses: actions/cache@v4
+        with:
+          path: /var/cache/apt/archives
+          key: ${{ runner.os }}-apt-${{ hashFiles('.github/workflows/release.yml') }}
+          restore-keys: |
+            ${{ runner.os }}-apt-
 
       - name: Install system dependencies
         run: |
@@ -281,7 +294,7 @@ jobs:
         run: pnpm install --frozen-lockfile
 
       - name: Build Tauri app
-        run: pnpm tauri build
+        run: pnpm tauri build --ci
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
