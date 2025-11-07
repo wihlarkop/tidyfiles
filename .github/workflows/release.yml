@@ -52,7 +52,7 @@ jobs:
           #### Linux
           1. **AppImage**: Download, make executable (\`chmod +x\`), and run (works on all distros)
           2. **Deb**: \`sudo dpkg -i tidyfiles_*.deb\` (Debian/Ubuntu)
-          3. **Arch**: \`sudo pacman -U tidyfiles-*.pkg.tar.zst\` (Arch/Manjaro)
+          3. **Arch**: First install dependencies: \`sudo pacman -S webkit2gtk gtk3\`, then \`sudo pacman -U tidyfiles-*.pkg.tar.zst\` (Arch/Manjaro)
 
           ### System Requirements
           - **Windows**: Windows 10 or later
@@ -353,6 +353,17 @@ jobs:
           cat > "${PKG_DIR}/usr/bin/tidyfiles" <<'LAUNCHER'
           #!/bin/bash
           # Launcher script with WebKit rendering fixes for Arch Linux
+
+          # Check for required dependencies
+          if ! ldconfig -p | grep -q libwebkit2gtk-4.1.so; then
+              echo "Error: Missing required dependency 'webkit2gtk'"
+              echo ""
+              echo "Please install it with:"
+              echo "  sudo pacman -S webkit2gtk gtk3"
+              echo ""
+              echo "Then run tidyfiles again."
+              exit 1
+          fi
 
           # Fix blank screen issues on Wayland/Hyprland
           export GDK_BACKEND=x11
