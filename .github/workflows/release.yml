@@ -344,8 +344,28 @@ jobs:
           mkdir -p "${PKG_DIR}/usr/share/applications"
           mkdir -p "${PKG_DIR}/usr/share/pixmaps"
 
-          # Copy binary
-          cp src-tauri/target/release/tidyfiles "${PKG_DIR}/usr/bin/"
+          # Copy binary to lib directory
+          mkdir -p "${PKG_DIR}/usr/lib/tidyfiles"
+          cp src-tauri/target/release/tidyfiles "${PKG_DIR}/usr/lib/tidyfiles/tidyfiles-bin"
+          chmod +x "${PKG_DIR}/usr/lib/tidyfiles/tidyfiles-bin"
+
+          # Create launcher script with WebKit fixes
+          cat > "${PKG_DIR}/usr/bin/tidyfiles" <<'LAUNCHER'
+          #!/bin/bash
+          # Launcher script with WebKit rendering fixes for Arch Linux
+
+          # Fix blank screen issues on Wayland/Hyprland
+          export GDK_BACKEND=x11
+
+          # Disable GPU compositing (fixes most rendering issues)
+          export WEBKIT_DISABLE_COMPOSITING_MODE=1
+
+          # Additional WebKit fixes
+          export WEBKIT_DISABLE_DMABUF_RENDERER=1
+
+          # Run the actual binary
+          exec /usr/lib/tidyfiles/tidyfiles-bin "$@"
+          LAUNCHER
           chmod +x "${PKG_DIR}/usr/bin/tidyfiles"
 
           # Create desktop entry
