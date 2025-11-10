@@ -128,12 +128,37 @@ Download the latest installer from the [Releases](https://github.com/wihlarkop/t
 1. Download the DMG file
 2. Open the DMG
 3. Drag TidyFiles to your Applications folder
-4. On first launch: Right-click → "Open" (to bypass Gatekeeper)
+4. **IMPORTANT:** On first launch, you'll see a security warning - follow the steps below
 
-**If you see "App is damaged" error:**
+**⚠️ macOS Security Warning (Gatekeeper)**
+
+Since TidyFiles is not code-signed with an Apple Developer certificate, macOS will block it from opening. This is normal and safe. Choose one of these methods:
+
+**Method 1: Automated Helper Script (Easiest)**
+```bash
+# Download and run the installation helper
+curl -O https://raw.githubusercontent.com/wihlarkop/tidyfiles/main/install-macos.sh
+bash install-macos.sh
+```
+
+**Method 2: Right-click to Open**
+1. Find TidyFiles in your Applications folder
+2. **Right-click** (or Control+click) on TidyFiles.app
+3. Select **"Open"** from the context menu
+4. Click **"Open"** in the dialog that appears
+
+**Method 3: Remove quarantine attribute**
 ```bash
 xattr -cr /Applications/TidyFiles.app
 ```
+
+**Method 4: System Settings**
+1. Try to open TidyFiles normally (it will be blocked)
+2. Go to **System Settings** → **Privacy & Security**
+3. Scroll down to find a message about TidyFiles
+4. Click **"Open Anyway"**
+
+After using any of these methods once, macOS will remember your choice and you can open TidyFiles normally.
 
 #### Linux
 
